@@ -12,9 +12,16 @@ The architecture demonstrates:
 - Load distribution using Classic Load Balancer
 - Monitoring using Amazon CloudWatch
 
----
+ ⚠️ **Important:**
 
-## 🏗 Architecture Diagram
+Application Load Balancer (ALB) was planned as part of the architecture; however, due to AWS Free Tier cost limitations, I used a Classic Load Balancer (CLB) to demonstrate load balancing functionality. The CLB was deployed temporarily for validation and removed after verification to avoid unnecessary charges.
+
+
+---
+Architecture Diagram
+
+![Architecture Diagram](01_Architecture%20diagram.png)
+
 
 
 ### 🧠 Architecture Explained
@@ -60,6 +67,11 @@ The architecture demonstrates:
 - Configured route table with the following route:
   - `0.0.0.0/0` → Internet Gateway (IGW)
 
+
+![VPC Created](02_VPC%20setup/VPC.png) ![Subnets](02_VPC%20setup/Subnets.png)
+
+
+
 ---
 
 ### 🔹 3. Configure Security Groups
@@ -76,6 +88,11 @@ The architecture demonstrates:
 | Protocol | Port | Source |
 |----------|------|--------|
 | HTTP     | 80   | 0.0.0.0/0 |
+
+
+![Security Group - CLB](03_Security%20Groups/security%20group%20(CLB).png)
+![Security Group - EC2](03_Security%20Groups/Security%20group%20(Ec2).png)
+
 
 ---
 
@@ -94,17 +111,28 @@ echo "<h1>EC2 PUBLIC ACCESS WORKING</h1>" > /var/www/html/index.html
 
 - Verified web access via: http://<Public-IP>
 
+
+![EC2 Instance](04_Ec2%20Instance/Ec2%20instance.png)
+![SSH Terminal](04_Ec2%20Instance/SSH%20terminal.png)
+![Browser Output](04_Ec2%20Instance/Browser.png)
+
+
 ---
 
 ### 🔹 5. Create AMI
 - Created a custom Amazon Machine Image (AMI) of the configured instance.
 - This AMI was used in the Launch Template.
 
+
+![AMI Created](05_AMI%20&%20Launch%20Template/AMI.png)
+
 ---
 
 ### 🔹 6. Launch Template
 - Created a Launch Template using the custom AMI.
 - Included instance type, key pair, and security group.
+
+![EC2 Launch Template](05_AMI%20&%20Launch%20Template/Ec2%20launch%20template.png)
 
 ---
 
@@ -116,6 +144,9 @@ echo "<h1>EC2 PUBLIC ACCESS WORKING</h1>" > /var/www/html/index.html
   - Max capacity: 2
 - Selected both public subnets.
 
+![Auto Scaling Group](06_Auto%20Scaling%20Group/Auto%20scaling%20group.png)
+
+
 ---
 
 ### 🔹 8. Classic Load Balancer (Temporary)
@@ -126,6 +157,9 @@ echo "<h1>EC2 PUBLIC ACCESS WORKING</h1>" > /var/www/html/index.html
 
 ⚠️ Classic Load Balancer was used due to AWS Free Tier cost constraints and deleted after verification.
 
+![Classic Load Balancer](07_Load%20Balancer/Load%20balancer%20(CLB).png)
+
+
 ---
 
 ### 🔹 9. Monitoring with CloudWatch
@@ -135,6 +169,10 @@ echo "<h1>EC2 PUBLIC ACCESS WORKING</h1>" > /var/www/html/index.html
   - HealthyHostCount
   - Auto Scaling Group Activity
   - Instance launch/terminate events
+
+
+    ![CloudWatch Monitoring](08_CloudWatch%20Monitoring/CloudWatch%20Monitoring.png)
+
 
 ---
 
