@@ -16,7 +16,6 @@ The architecture demonstrates:
 
 ## 🏗 Architecture Diagram
 
-![AWS Scalable Web App Architecture](./architecture/aws-scalable-web-architecture.png)
 
 ### 🧠 Architecture Explained
 
@@ -151,7 +150,7 @@ echo "<h1>EC2 PUBLIC ACCESS WORKING</h1>" > /var/www/html/index.html
 
 ---
 
-## 🧹 Cleanup (Important)
+## 🧹 Cleanup
 To avoid accumulating AWS costs, I cleaned up all resources:
 
 - Deleted Classic Load Balancer
