@@ -1,233 +1,179 @@
-# AWS Two-Tier Application Deployment (Web Tier + App Tier)
+# AWS Scalable Web Application Deployment (Web Tier)
 
-This project is my implementation of a secure and scalable Two-Tier Architecture on AWS. I built everything manually using the AWS Management Console to strengthen my understanding of networking, security, and deployment patterns.
+## 🚀 Project Overview
 
----
+This repository contains a complete, step-by-step implementation of a **scalable web application architecture on Amazon Web Services (AWS)**.  
+I independently designed and deployed the solution using the AWS Management Console while being mindful of the **AWS Free Tier limits**.
 
-## Step 1️⃣ Architecture Diagram 
-
-INTERNET  
-   │  
-   ▼  
-AWS Internet Gateway  
-   │  
-   ▼  
-VPC (10.0.0.0/16)  
-   ├── Public Subnet-1 (10.0.1.0/24)  
-   │     ├── EC2 Instance: my-web-ec2  
-   │     │     └── Security Group: my-web-sg  
-   │     └── NAT Gateway (Elastic IP)  
-   │  
-   └── Private Subnet-1 (10.0.11.0/24)  
-         ├── EC2 Instance: my-app-ec2  
-         │     └── Security Group: my-app-sg  
-         │  
-         └── API Call ───────────────► Python Backend (Private Subnet-2)  
-            Private Subnet-2 (10.0.12.0/24)  
-               ├── Python Backend (Port 8080)  
-               │     └── SimpleHTTPServer  
-               └── Security Group: app-sg  
-                     └── Allows inbound on port 8030 from my-web-sg
+The architecture demonstrates:
+- Secure networking (VPC, Subnets, IGW)
+- Public web server hosting using EC2
+- Scalability using Auto Scaling Group
+- Load distribution using Classic Load Balancer
+- Monitoring using Amazon CloudWatch
 
 ---
 
-## Step 2️⃣ Web Tier (Public Subnets)
+## 🏗 Architecture Diagram
 
-- Runs **NGINX on EC2**
-- Placed in public subnets
-- Exposed to the internet only through a Classic Load Balancer
-- Handles all incoming HTTP requests
-- Sends backend requests to the private App Tier
+![AWS Scalable Web App Architecture](./architecture/aws-scalable-web-architecture.png)
 
----
+### 🧠 Architecture Explained
 
-## Step 3️⃣ Application Tier (Private Subnets)
-
-- Runs **PHP and PHP-FPM**
-- Completely private (no public IP)
-- Accessible only from the Web Tier via Security Groups
-- Uses NAT Gateway for software updates
+- **Internet** → Traffic enters from the internet
+- **Internet Gateway (IGW)** → Provides inbound/outbound connectivity
+- **VPC with Public Subnets** → Isolated network for resources
+- **Auto Scaling Group** → Manages EC2 instance scaling
+- **Classic Load Balancer** → Distributes incoming HTTP traffic
+- **EC2 Web Servers** → Serve HTTP application content
+- **CloudWatch** → Monitors metrics and health status
 
 ---
 
-## Step 4️⃣ Networking
+## ☁️ AWS Services Used
 
-- Custom VPC with CIDR 10.0.0.0/16
-- Two public subnets and two private subnets
-- Internet Gateway for public traffic
-- NAT Gateway for private outbound traffic
-- Separate route tables for public and private networks
-
----
-
-## Step 5️⃣ Security
-
-- Web Security Group allows HTTP and SSH
-- App Security Group only allows traffic from Web SG
-- Tier isolation follows AWS best practices
-
-This architecture design matches how enterprise environments separate frontend and backend workloads.
+| AWS Service | Purpose |
+|-------------|---------|
+| VPC | Custom network with internet access |
+| Subnets | Public subnets for web access |
+| Internet Gateway | Enables internet connectivity |
+| EC2 | Hosts Apache web server |
+| Auto Scaling Group | Manages horizontal scaling |
+| Classic Load Balancer | Distributes HTTP traffic to EC2 |
+| CloudWatch | Monitoring and metrics |
+| Security Groups | Controls inbound and outbound traffic |
 
 ---
 
-## Step 6️⃣ VPC and Networking Setup
+## 🛠 Implementation Steps
 
-1. Created a new VPC:
-   - VPC CIDR: 10.0.0.0/16
-   - DNS Hostnames: Enabled
-   - DNS Resolution: Enabled
-
-2. Created Subnets:
-   - Public Subnet 1 – 10.0.1.0/24
-   - Public Subnet 2 – 10.0.2.0/24
-   - Private Subnet 1 – 10.0.11.0/24
-   - Private Subnet 2 – 10.0.12.0/24
-
-3. Added Networking Resources:
-   - Internet Gateway (attached to VPC)
-   - NAT Gateway (created in Public Subnet 1)
-   - Custom Route Tables for both public and private subnets
-
-This gave me a clean separation between public-facing and internal resources.
+### 🔹 1. Login & Region Selection
+- Logged into AWS Management Console
+- Selected the `ap-south-1` (Mumbai) region
 
 ---
 
-## Step 7️⃣ Security Groups
+### 🔹 2. Create VPC & Networking
 
-Configured two main security groups:
+- Created a **VPC** with CIDR block: `10.0.0.0/16`
+- Created **two public subnets**
+- Attached an **Internet Gateway**
+- Configured route table with:
+0.0.0.0/0 → Internet Gateway
 
-- **Web-SG**
-  - HTTP (80) from anywhere
-  - SSH (22) from my IP
-  - Allowed to talk to App-SG
-
-- **App-SG**
-  - Accepts only backend ports (8080 or 9000)
-  - Source allowed only from Web-SG
-  - No public access allowed
-
-This ensures that only the Web Tier can communicate with the App Tier.
+yaml
+Copy code
 
 ---
 
-## Step 8️⃣ Classic Load Balancer Setup
+### 🔹 3. Configure Security Groups
 
-Since ALB was not available in my Free Tier account, I used a Classic Load Balancer (CLB) instead.
+**EC2 Security Group**
+| Protocol | Port | Source |
+|----------|------|--------|
+| HTTP | 80 | 0.0.0.0/0 |
+| SSH | 22 | My IP |
 
-- Listener on HTTP port 80
-- Health checks on port 80
-- Placed in both public subnets
-- Uses Web-SG
-- Registered Web EC2 instance
-
-CLB distributes incoming traffic across my Web Tier and provides a single, stable public endpoint.
-
----
-
-## Step 9️⃣ Web Tier (NGINX EC2 – Public Subnet)
-
-I launched my Web EC2 instance in the public subnet.
-
-After connecting, I installed and configured NGINX:
-```sh
-sudo dnf update -y
-sudo dnf install nginx -y
-sudo systemctl enable nginx
-sudo systemctl start nginx
-```
-
-I replaced the default index page with my own custom frontend:
-```
-Hello from Web EC2 (Frontend)
-Backend Response:
-```
-
-Configured NGINX to forward backend requests to the App Tier using the private IP address of the application instance.
+**Load Balancer Security Group**
+| Protocol | Port | Source |
+|----------|------|--------|
+| HTTP | 80 | 0.0.0.0/0 |
 
 ---
 
-## Step 🔟 Application Tier (PHP-FPM EC2 – Private Subnet)
+### 🔹 4. Launch EC2 Web Server
 
-The App EC2 instance was launched in a private subnet with no public IP.  
-Installed PHP and PHP-FPM:
-```sh
-sudo dnf update -y
-sudo dnf install php php-fpm -y
-sudo systemctl enable php-fpm
-sudo systemctl start php-fpm
-```
+1. Launched an Amazon Linux 2 instance (`t2.micro`)
+2. Used the following **User Data** to install Apache:
 
-Added a simple backend PHP script:
-```php
-<?php
-echo "Hello from APP EC2 Backend";
-?>
-```
+```bash
+#!/bin/bash
+yum install -y httpd
+systemctl start httpd
+systemctl enable httpd
+echo "<h1>EC2 PUBLIC ACCESS WORKING</h1>" > /var/www/html/index.html
+Verified web access via http://<Public-IP>
 
-Confirmed connectivity from the Web Tier:
-```sh
-curl http://10.0.12.87:8080
-```
+🔹 5. Create AMI
+Created a custom Amazon Machine Image (AMI) of the configured instance
 
-Once I saw the expected output, I knew the private networking and SG rules were correct.
+This AMI was used in the Launch Template
 
----
+🔹 6. Launch Template
+Created a Launch Template using the custom AMI
 
-## Step 11️⃣ Application Testing
+Included instance type, key pair, and security group
 
-- ✔ Access through Classic Load Balancer:  
-  Opened the CLB DNS name in my browser and was able to reach the Web Tier frontend.
+🔹 7. Auto Scaling Group
+Created an Auto Scaling Group using the Launch Template
 
-- ✔ Private backend test:  
-  Web EC2 successfully communicated with the App Tier over private IP.
+Configured:
 
-- ✔ No public access to App Tier:  
-  This confirmed proper isolation.
+Min capacity: 1
 
----
+Desired capacity: 1
 
-## Step 12️⃣ Monitoring
+Max capacity: 2
 
-I monitored my EC2 instances using:
+Selected both public subnets
 
-- CloudWatch CPU alarms
-- Web and App server logs
-- Health checks from the load balancer
+🔹 8. Classic Load Balancer (Temporary)
+Created a Classic Load Balancer (internet-facing)
 
-This helped me validate the system’s stability.
+Listener: HTTP (80)
 
----
+Registered Auto Scaling instances
 
-## Step 13️⃣ Cleanup
+Verified traffic distribution
 
-Removed all resources in required order:
+⚠️ Classic Load Balancer was used due to AWS Free Tier cost constraints and deleted after verification.
 
-1. Classic Load Balancer
-2. EC2 Instances
-3. NAT Gateway
-4. Internet Gateway
-5. Subnets & Route Tables
-6. Security Groups
-7. VPC
+🔹 9. Monitoring with CloudWatch
+Monitored the following:
 
-This ensured no leftover charges.
+EC2 CPU Utilization
 
----
+Load Balancer Metrics
 
-## Step 14️⃣ What I Learned
+HealthyHostCount
 
-By completing this project, I developed strong hands-on experience in:
+Auto Scaling Group Activity
 
-- Designing AWS Two-Tier architectures
-- Creating and configuring a custom VPC
-- Working with public/private subnets
-- Deploying Classic Load Balancers
-- Installing and configuring NGINX and PHP-FPM
-- Implementing NAT Gateway for private outbound access
-- Writing secure networking rules using Security Groups
-- Troubleshooting EC2, routing, and connectivity issues
-- Understanding application traffic flow inside AWS
+Instance launch/terminate events
 
-This project helped me understand how real production environments are structured using AWS networking and compute services.
+📊 Validation & Testing
+Test	Status
+Apache Running	✅
+Public Web Access	✅
+Auto Scaling Group Scaling	✅
+Load Balancer Traffic Distribution	✅
+CloudWatch Monitoring	✅
 
----
+🧹 Cleanup (Important)
+To avoid accumulating AWS costs, I cleaned up all resources:
+
+Deleted Classic Load Balancer
+
+Deleted Auto Scaling Group
+
+Deleted Launch Template
+
+Deregistered AMI
+
+Terminated EC2 instance(s)
+
+Removed VPC and subnets
+
+🧠 Key Learnings
+AWS VPC design and routing
+
+EC2 provisioning and Apache configuration
+
+Launch Templates and Auto Scaling Group setup
+
+Load balancer configuration
+
+Monitoring with Amazon CloudWatch
+
+Cost-aware cloud design
+
