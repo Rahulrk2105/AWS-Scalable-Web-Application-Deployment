@@ -58,26 +58,25 @@ The architecture demonstrates:
 - Created a **VPC** with CIDR block: `10.0.0.0/16`
 - Created **two public subnets**
 - Attached an **Internet Gateway**
-- Configured route table with:
-0.0.0.0/0 → Internet Gateway
-
-yaml
-Copy code
+- Configured route table with the following route:
+  - `0.0.0.0/0` → Internet Gateway (IGW)
 
 ---
 
 ### 🔹 3. Configure Security Groups
 
 **EC2 Security Group**
+
 | Protocol | Port | Source |
 |----------|------|--------|
-| HTTP | 80 | 0.0.0.0/0 |
-| SSH | 22 | My IP |
+| HTTP     | 80   | 0.0.0.0/0 |
+| SSH      | 22   | My IP |
 
 **Load Balancer Security Group**
+
 | Protocol | Port | Source |
 |----------|------|--------|
-| HTTP | 80 | 0.0.0.0/0 |
+| HTTP     | 80   | 0.0.0.0/0 |
 
 ---
 
@@ -92,88 +91,82 @@ yum install -y httpd
 systemctl start httpd
 systemctl enable httpd
 echo "<h1>EC2 PUBLIC ACCESS WORKING</h1>" > /var/www/html/index.html
-Verified web access via http://<Public-IP>
+```
 
-🔹 5. Create AMI
-Created a custom Amazon Machine Image (AMI) of the configured instance
+- Verified web access via: http://<Public-IP>
 
-This AMI was used in the Launch Template
+---
 
-🔹 6. Launch Template
-Created a Launch Template using the custom AMI
+### 🔹 5. Create AMI
+- Created a custom Amazon Machine Image (AMI) of the configured instance.
+- This AMI was used in the Launch Template.
 
-Included instance type, key pair, and security group
+---
 
-🔹 7. Auto Scaling Group
-Created an Auto Scaling Group using the Launch Template
+### 🔹 6. Launch Template
+- Created a Launch Template using the custom AMI.
+- Included instance type, key pair, and security group.
 
-Configured:
+---
 
-Min capacity: 1
+### 🔹 7. Auto Scaling Group
+- Created an Auto Scaling Group using the Launch Template.
+- Configured:
+  - Min capacity: 1
+  - Desired capacity: 1
+  - Max capacity: 2
+- Selected both public subnets.
 
-Desired capacity: 1
+---
 
-Max capacity: 2
-
-Selected both public subnets
-
-🔹 8. Classic Load Balancer (Temporary)
-Created a Classic Load Balancer (internet-facing)
-
-Listener: HTTP (80)
-
-Registered Auto Scaling instances
-
-Verified traffic distribution
+### 🔹 8. Classic Load Balancer (Temporary)
+- Created a Classic Load Balancer (internet-facing)
+- Listener: HTTP (80)
+- Registered Auto Scaling instances
+- Verified traffic distribution
 
 ⚠️ Classic Load Balancer was used due to AWS Free Tier cost constraints and deleted after verification.
 
-🔹 9. Monitoring with CloudWatch
-Monitored the following:
+---
 
-EC2 CPU Utilization
+### 🔹 9. Monitoring with CloudWatch
+- Monitored the following:
+  - EC2 CPU Utilization
+  - Load Balancer Metrics
+  - HealthyHostCount
+  - Auto Scaling Group Activity
+  - Instance launch/terminate events
 
-Load Balancer Metrics
+---
 
-HealthyHostCount
+## 📊 Validation & Testing
 
-Auto Scaling Group Activity
+| Test | Status |
+|------|--------|
+| Apache Running | ✅ |
+| Public Web Access | ✅ |
+| Auto Scaling Group Scaling | ✅ |
+| Load Balancer Traffic Distribution | ✅ |
+| CloudWatch Monitoring | ✅ |
 
-Instance launch/terminate events
+---
 
-📊 Validation & Testing
-Test	Status
-Apache Running	✅
-Public Web Access	✅
-Auto Scaling Group Scaling	✅
-Load Balancer Traffic Distribution	✅
-CloudWatch Monitoring	✅
-
-🧹 Cleanup (Important)
+## 🧹 Cleanup (Important)
 To avoid accumulating AWS costs, I cleaned up all resources:
 
-Deleted Classic Load Balancer
+- Deleted Classic Load Balancer
+- Deleted Auto Scaling Group
+- Deleted Launch Template
+- Deregistered AMI
+- Terminated EC2 instance(s)
+- Removed VPC and subnets
 
-Deleted Auto Scaling Group
+---
 
-Deleted Launch Template
-
-Deregistered AMI
-
-Terminated EC2 instance(s)
-
-Removed VPC and subnets
-
-🧠 Key Learnings
-AWS VPC design and routing
-
-EC2 provisioning and Apache configuration
-
-Launch Templates and Auto Scaling Group setup
-
-Load balancer configuration
-
-Monitoring with Amazon CloudWatch
-
-Cost-aware cloud design
-
+## 🧠 Key Learnings
+- AWS VPC design and routing
+- EC2 provisioning and Apache configuration
+- Launch Templates and Auto Scaling Group setup
+- Load balancer configuration
+- Monitoring with Amazon CloudWatch
+- Cost-aware cloud design
